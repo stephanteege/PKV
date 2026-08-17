@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PKV-Beitragsrechner Beamte Thüringen · Vergleich von vier Angeboten</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --plane:#f9f9f7; --sunk:#f2f1ed;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,0.10);
+  --bar:#2a78d6; --bar-best:#0d366b; --bar-soft:#9ec5f4; --bar-rz:#eb6834;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --success-ink:#006300;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-1:#1a1a19; --plane:#0d0d0d; --sunk:#232322;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+    --bar:#3987e5; --bar-best:#86b6ef; --bar-soft:#184f95; --bar-rz:#d95926;
+    --success-ink:#0ca30c;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --plane:#0d0d0d; --sunk:#232322;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+  --bar:#3987e5; --bar-best:#86b6ef; --bar-soft:#184f95; --bar-rz:#d95926;
+  --success-ink:#0ca30c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink-1);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;padding:26px 16px 90px}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:27px;line-height:1.2;margin:0 0 6px;letter-spacing:-0.02em}
+h2{font-size:20px;margin:40px 0 12px;letter-spacing:-0.015em}
+h3{font-size:15.5px;margin:20px 0 8px} h3:first-child{margin-top:0}
+p{margin:0 0 12px;color:var(--ink-2)}
+.sub{color:var(--ink-3);font-size:13.5px;margin-bottom:26px}
+.card{background:var(--surface-1);border:1px solid var(--ring);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.flag{border-left:4px solid var(--warning);padding-left:16px}
+.flag.crit{border-left-color:var(--critical)}
+.flag.ok{border-left-color:var(--good)}
+.flag.info{border-left-color:var(--bar)}
+.badge{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;
+  padding:3px 9px;border-radius:999px;border:1px solid var(--ring);color:var(--ink-2);background:var(--sunk)}
+.badge.good{color:var(--success-ink)} .badge.crit{color:var(--critical)}
+fieldset{border:1px solid var(--grid);border-radius:8px;padding:12px 14px 14px;margin:0}
+legend{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:0 6px}
+label.opt{display:flex;align-items:flex-start;gap:9px;padding:5px 0;cursor:pointer;font-size:14px}
+label.opt input{margin:3px 0 0;flex:none;width:16px;height:16px;accent-color:var(--bar)}
+label.opt .amt{color:var(--ink-3);font-size:12.5px;display:block;margin-top:1px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px}
+.row{display:grid;grid-template-columns:200px 1fr 104px;gap:12px;align-items:center;padding:7px 0}
+.row .nm{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.3}
+.row .nm b{display:block;color:var(--ink-1);font-weight:650;font-size:14px}
+.track{position:relative;height:26px;background:linear-gradient(var(--grid),var(--grid)) 0 100%/100% 1px no-repeat;display:flex;align-items:center}
+.seg{height:22px;transition:width .35s ease}
+.seg.net{background:var(--bar)} .seg.net.best{background:var(--bar-best)}
+.seg.rz{background:var(--bar-rz);border-radius:0 4px 4px 0;margin-left:2px}
+.seg.cap{border-radius:0 4px 4px 0}
+.row .val{font-weight:650;font-variant-numeric:tabular-nums;font-size:15px;text-align:right}
+.row .val small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-3)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--ink-3)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.tw{overflow-x:auto;margin:0 -20px;padding:0 20px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:660px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:700}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sum td{border-top:2px solid var(--axis);border-bottom:none;font-weight:700}
+tr.off td{color:var(--ink-3);text-decoration:line-through}
+tr.rzrow td{color:var(--bar-rz)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.d-good{background:var(--good)} .d-mid{background:var(--warning)} .d-bad{background:var(--serious)} .d-crit{background:var(--critical)}
+.src{font-size:10.5px;color:var(--ink-3);font-weight:600;letter-spacing:.03em;white-space:nowrap}
+ul{margin:0 0 12px;padding-left:20px;color:var(--ink-2)} li{margin-bottom:6px}
+ol{color:var(--ink-2);padding-left:20px} ol li{margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}
+.kpi{font-size:31px;font-weight:700;letter-spacing:-0.025em;line-height:1.1;margin:2px 0}
+.kpi small{font-size:14px;font-weight:500;color:var(--ink-3)}
+.foot{color:var(--ink-3);font-size:12.5px;margin-top:6px}
+.toggle{position:fixed;bottom:16px;right:16px;background:var(--surface-1);border:1px solid var(--ring);
+  border-radius:999px;padding:8px 15px;font-size:12.5px;cursor:pointer;color:var(--ink-2);z-index:9;
+  box-shadow:0 2px 10px rgba(0,0,0,.14)}
+input[type=number]{width:70px;padding:5px 7px;border:1px solid var(--grid);border-radius:6px;
+  background:var(--surface-1);color:var(--ink-1);font:inherit;font-size:13.5px;font-variant-numeric:tabular-nums}
+select{padding:6px 9px;border:1px solid var(--grid);border-radius:6px;background:var(--surface-1);color:var(--ink-1);font:inherit;font-size:13.5px}
+.qbox{background:var(--sunk);border-radius:8px;padding:14px 16px;margin:10px 0;font-size:13.5px;color:var(--ink-2)}
+.qbox b{color:var(--ink-1)} .qbox ul{margin:8px 0 0}
+@media(max-width:640px){ .row{grid-template-columns:1fr;gap:2px} .row .nm,.row .val{text-align:left} }
+</style>
+</head>
+<body>
+<button class="toggle" id="tt">Dunkel / Hell</button>
+<div class="wrap">
+
+<h1>PKV-Entscheidungshilfe</h1>
+<p class="sub">Beihilfeberechtigter Beamter in Thüringen · Bemessungssatz 50 % · Eintrittsalter 37 · Versicherungsbeginn 10/2026 · Beiträge aus vier Originalangeboten vom Juli/August 2026</p>
+
+<!-- ===== RECHNER GANZ OBEN ===== -->
+<div class="card">
+  <div class="controls">
+    <fieldset>
+      <legend>Bausteine</legend>
+      <label class="opt"><input type="checkbox" id="m_wl" checked><span>Stationäre Wahlleistungen<span class="amt">Chefarzt + Ein-/Zweibettzimmer · bei Allianz nur die 1-Bett-Differenz</span></span></label>
+      <label class="opt"><input type="checkbox" id="m_erg" checked><span>Beihilfeergänzung (Restkosten)</span></label>
+      <label class="opt"><input type="checkbox" id="m_kht"><span>Krankenhaustagegeld 35 €</span></label>
+      <label class="opt"><input type="checkbox" id="m_kur"><span>Kurtagegeld 150 €<span class="amt">nur bei der Bayerischen angeboten</span></span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Selbstbehalt &amp; Risikozuschlag</legend>
+      <label class="opt"><input type="checkbox" id="m_sb" checked><span>Selbstbehalt bei der Bayerischen<span class="amt">max. 300 €/Jahr · spart 68,57 €/Monat</span></span></label>
+      <label class="opt"><input type="checkbox" id="m_rz" checked><span>Risikozuschlag einrechnen<span class="amt">abwählen zeigt, wie die Tarife ohne Zuschlag zueinander stehen</span></span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Beihilfesatz</legend>
+      <label class="opt"><input type="radio" name="bh" value="50" checked><span>50 % — dein Fall</span></label>
+      <label class="opt"><input type="radio" name="bh" value="70"><span>70 % — hypothetisch</span></label>
+    </fieldset>
+  </div>
+</div>
+
+<div class="card">
+  <div id="chart"></div>
+  <div class="legend"><span><i style="background:var(--bar)"></i>Tarifbeitrag</span><span><i style="background:var(--bar-rz)"></i>Risikozuschlag</span></div>
+  <p class="foot" id="chartnote"></p>
+</div>
+
+<div class="card">
+  <h3>Baustein für Baustein</h3>
+  <div class="tw"><table id="detail"></table></div>
+</div>
+
+<!-- ===== KERNBEFUND ===== -->
+<div class="card flag crit">
+  <span class="badge crit">Kernbefund</span>
+  <h2 style="margin:10px 0 12px">Der Preisunterschied zwischen den Angeboten ist der Risikozuschlag.</h2>
+  <p>Nimm oben den Haken bei „Risikozuschlag einrechnen" heraus: Die drei Favoriten liegen dann innerhalb von <b>6,16 €</b> — Bayerische mit Selbstbehalt 383,72 €, Signal Iduna 384,30 €, Debeka 389,88 €. Mit Zuschlag klaffen sie um 96,82 € auseinander. Die Tarife sind fast gleich teuer; die Gesellschaften bewerten dieselbe Vorerkrankung nur völlig unterschiedlich.</p>
+  <div class="tw"><table>
+    <tr><th>Anbieter</th><th class="n">Zuschlag</th><th class="n">€ / Monat</th><th class="n">40 Jahre nominal</th></tr>
+    <tr><td>Bayerische, ohne Selbstbehalt</td><td class="n"><span class="dot d-good"></span><b>3,9 %</b></td><td class="n">15,30 €</td><td class="n">7.344 €</td></tr>
+    <tr><td>Bayerische, mit Selbstbehalt</td><td class="n"><span class="dot d-good"></span><b>4,4 %</b></td><td class="n">14,40 €</td><td class="n">6.912 €</td></tr>
+    <tr><td>Signal Iduna</td><td class="n">10,0 %</td><td class="n">29,81 €</td><td class="n">14.309 €</td></tr>
+    <tr><td>Allianz</td><td class="n"><span class="dot d-bad"></span>19,2 %</td><td class="n">71,00 €</td><td class="n">34.080 €</td></tr>
+    <tr><td>Debeka</td><td class="n"><span class="dot d-crit"></span><b>30,0 %</b></td><td class="n">105,06 €</td><td class="n">50.429 €</td></tr>
+  </table></div>
+  <p style="margin-top:12px">Zwischen der Bayerischen und Debeka liegt der <b>Faktor 7</b> — für denselben Sachverhalt, über 40 Jahre nominal 43.500 €. Der Zuschlag steigt bei jeder Beitragsanpassung prozentual mit.</p>
+  <p><b>Und die Leistung spricht nicht dagegen:</b> Über 19 Kriterien gemittelt liegt die Bayerische mit 3,9 vorn, vor Signal Iduna und Allianz mit je 3,8; Debeka fällt mit 3,1 deutlich ab (Abschnitt 6). Der günstigste Tarif ist hier also nicht der schwächste.</p>
+  <p><b>Erste Handlung, vor allem anderen:</b> Beantrage bei Debeka die Überprüfung und Herabsetzung des Zuschlags. Liegt eine stabile, seit Jahren behandlungsfreie Vorerkrankung zugrunde, ist eine Überprüfung aussichtsreich — und die Risikoentscheidung eines Wettbewerbers mit 3,9 % ist dabei der stärkste Beleg. Eine Halbierung bei Debeka sind 52 € im Monat, mehr als der gesamte heutige Abstand zwischen Platz 1 und Platz 3.</p>
+</div>
+
+<!-- ===== RZ DETAIL ===== -->
+<h2>1 · Risikozuschlag Tarif für Tarif</h2>
+<div class="card">
+  <div class="tw"><table>
+    <tr><th>Anbieter / Tarif</th><th class="n">Beitrag ohne RZ</th><th class="n">Zuschlag</th><th class="n">in %</th></tr>
+    <tr><td colspan="4" style="background:var(--sunk);font-weight:650">Bayerische — ohne Selbstbehalt</td></tr>
+    <tr><td>BeihilfeCOMFORT 30</td><td class="n">271,76 €</td><td class="n">9,00 €</td><td class="n">3,3 %</td></tr>
+    <tr><td>BeihilfeCOMFORT 20k</td><td class="n">93,30 €</td><td class="n">6,00 €</td><td class="n">6,4 %</td></tr>
+    <tr><td>BeihilfeErgänzungPlus</td><td class="n">28,45 €</td><td class="n">0,30 €</td><td class="n">1,1 %</td></tr>
+    <tr class="sum"><td>Summe</td><td class="n">393,51 €</td><td class="n">15,30 €</td><td class="n">3,9 %</td></tr>
+
+    <tr><td colspan="4" style="background:var(--sunk);font-weight:650">Bayerische — mit Selbstbehalt</td></tr>
+    <tr><td>BeihilfeCOMFORT 30 SB</td><td class="n">223,75 €</td><td class="n">8,46 €</td><td class="n">3,8 %</td></tr>
+    <tr><td>BeihilfeCOMFORT 20k SB</td><td class="n">73,64 €</td><td class="n">5,64 €</td><td class="n">7,7 %</td></tr>
+    <tr><td>BeihilfeErgänzungPlus</td><td class="n">28,45 €</td><td class="n">0,30 €</td><td class="n">1,1 %</td></tr>
+    <tr class="sum"><td>Summe</td><td class="n">325,84 €</td><td class="n">14,40 €</td><td class="n">4,4 %</td></tr>
+
+    <tr><td colspan="4" style="background:var(--sunk);font-weight:650">Signal Iduna — glatte 10 % auf beide Haupttarife</td></tr>
+    <tr><td>EXKLUSIV-B 30</td><td class="n">197,23 €</td><td class="n">19,72 €</td><td class="n">10,0 %</td></tr>
+    <tr><td>EXKLUSIV-B 20V</td><td class="n">100,88 €</td><td class="n">10,09 €</td><td class="n">10,0 %</td></tr>
+    <tr><td>Wahlleistungen, Ergänzung</td><td class="n">21,06 €</td><td class="n">0,00 €</td><td class="n">0 %</td></tr>
+    <tr class="sum"><td>Summe</td><td class="n">298,11 €</td><td class="n">29,81 €</td><td class="n">10,0 %</td></tr>
+
+    <tr><td colspan="4" style="background:var(--sunk);font-weight:650">Allianz — ungleich verteilt</td></tr>
+    <tr><td>BHA51 (ambulant)</td><td class="n">200,89 €</td><td class="n">55,00 €</td><td class="n"><span class="dot d-crit"></span>27,4 %</td></tr>
+    <tr><td>BHEB (Ergänzung)</td><td class="n">32,54 €</td><td class="n">8,00 €</td><td class="n">24,6 %</td></tr>
+    <tr><td>BHE1K (1-Bett)</td><td class="n">6,62 €</td><td class="n">1,00 €</td><td class="n">15,1 %</td></tr>
+    <tr><td>BHK51 (stationär)</td><td class="n">94,07 €</td><td class="n">7,00 €</td><td class="n">7,4 %</td></tr>
+    <tr><td>BHZ51 (Zahn)</td><td class="n">35,61 €</td><td class="n">0,00 €</td><td class="n">0 %</td></tr>
+    <tr class="sum"><td>Summe</td><td class="n">369,73 €</td><td class="n">71,00 €</td><td class="n">19,2 %</td></tr>
+
+    <tr><td colspan="4" style="background:var(--sunk);font-weight:650">Debeka — 30 % auf alle Krankheitskostentarife</td></tr>
+    <tr><td>B30</td><td class="n">218,04 €</td><td class="n">65,41 €</td><td class="n">30,0 %</td></tr>
+    <tr><td>B20K</td><td class="n">104,23 €</td><td class="n">31,27 €</td><td class="n">30,0 %</td></tr>
+    <tr><td>WL30</td><td class="n">9,93 €</td><td class="n">2,98 €</td><td class="n">30,0 %</td></tr>
+    <tr><td>WL20K</td><td class="n">3,70 €</td><td class="n">1,11 €</td><td class="n">30,0 %</td></tr>
+    <tr><td>BC</td><td class="n">14,28 €</td><td class="n">4,29 €</td><td class="n">30,0 %</td></tr>
+    <tr class="sum"><td>Summe</td><td class="n">350,18 €</td><td class="n">105,06 €</td><td class="n">30,0 %</td></tr>
+  </table></div>
+  <p class="foot">Bayerische aus der Risikoentscheidung vom 30.07.2026, Signal Iduna und Allianz aus dem Angebot von KV Werk, Debeka aus der Angabe von 30 % zurückgerechnet.</p>
+
+  <h3>Die Debeka-Rechnung ist belastbar</h3>
+  <p>Die Summe geht exakt auf: 350,18 € netto + 105,06 € Zuschlag + 8,09 € Krankenhaustagegeld + 39,70 € Pflegepflicht = 503,03 €, also genau der Gesamtbeitrag im Vorschlag. Und die Gegenprobe stimmt ebenfalls: Rechnet man aus B30 sowohl den Zuschlag als auch den gesetzlichen Zuschlag von 10 % heraus, bleiben 198,22 € — Signal Iduna verlangt für den gleichwertigen EXKLUSIV-B 30 genau 197,23 €. Zwei Gesellschaften, 0,5 % Abweichung. Vor der Bereinigung war Debekas B30 mit 283,45 € der teuerste Grundtarif im Feld, was zu Debekas Ruf als Preisführer für Beamte nicht passte.</p>
+  <p>Eine Detailfrage bleibt: ob der Zuschlag auch WL30, WL20K und BC trifft und nicht nur B30 und B20K. Trifft er nur die beiden großen, sind es 96,68 € statt 105,06 € — an der Größenordnung ändert das nichts.</p>
+</div>
+
+<!-- ===== BEITRAGSANPASSUNG ===== -->
+<h2>2 · Beitragsanpassung — bereits passiert, nicht bevorstehend</h2>
+<div class="card">
+  <p>Die Anpassungen für 2026 sind wirksam und in allen vier Angeboten enthalten. Belegt durch die Tarifangaben im Angebot von KV Werk — Signal Iduna EXKLUSIV-B „BAP Jan 2026", Allianz „BAP Mai 2026" — und die Versionskennung der Bayerischen, BA LRK 2026-R03 vom 17.08.2026. Entscheidend ist damit nicht, was noch kommt, sondern wen es wie hart getroffen hat.</p>
+  <div class="tw"><table>
+    <tr><th>Anbieter</th><th class="n">Anpassung 2026</th><th>Stichtag</th><th>Deine Tarife betroffen</th><th class="n">nächster Termin</th></tr>
+    <tr><td><b>Bayerische / VKB</b></td>
+      <td class="n"><span class="dot d-crit"></span><b>+22,8 %</b> im Schnitt<br><span class="src">BeihilfeCOMFORT 25–30 %</span></td>
+      <td>01.01.2026</td><td>ja</td><td class="n">01.01.2027</td></tr>
+    <tr><td><b>Signal Iduna</b></td>
+      <td class="n"><span class="dot d-bad"></span><b>≈ 21,3 %</b><br><span class="src">Vollversicherung</span></td>
+      <td>01.01.2026</td><td>ja</td><td class="n">01.01.2027</td></tr>
+    <tr><td><b>Allianz</b></td><td class="n">+11 %</td><td>01.05.2026</td><td>ja</td>
+      <td class="n"><span class="dot d-good"></span>frühestens 01.05.2027</td></tr>
+    <tr><td><b>Debeka</b></td>
+      <td class="n"><span class="dot d-good"></span><b>+11 %</b><br><span class="src">nur Angestellten- und P-Tarife</span></td>
+      <td>01.01.2026</td><td><b>nein</b></td><td class="n">01.01.2027</td></tr>
+    <tr><td colspan="5" style="color:var(--ink-3)">Marktdurchschnitt 2026 über alle Anbieter: rund <b>13 %</b></td></tr>
+  </table></div>
+
+  <p style="margin-top:14px"><b>Was das ändert.</b> Die Bayerische ist trotz der höchsten Anpassung am Markt noch die günstigste — die 398,12 € sind ein Preis nach +25 bis 30 %. Ein Sprung dieser Größe hat zwei mögliche Ursachen: nachgeholter Rückstand, dann folgen ruhigere Jahre; oder strukturell zu knappe Kalkulation, dann kommt mehr. Das trennt nur die Zehnjahreshistorie.</p>
+  <p>Signal Iduna ist kein sicherer Hafen — rund 21,3 % liegen ebenfalls weit über den 13 % Marktschnitt. Debeka dagegen hat als einzige der vier ihre Beamtentarife unangetastet gelassen und dabei bei Angestellten 11 % genommen. Das ist der belastbarste Stabilitätsnachweis im Feld und macht die Herabsetzung ihres Risikozuschlags umso lohnender.</p>
+
+  <p><b>Terminrisiko bei zwei Angeboten.</b> Signal Iduna und Allianz sind auf Beginn 01.01.2027 gerechnet — auf einen möglichen Anpassungsstichtag, aber mit der Beitragstafel von Januar 2026. Signal Iduna kommuniziert die 2027-Werte erst im Sommer/Herbst. Ein Vertrag mit Beginn 01.01.2027 kostet den dann gültigen Beitrag, nicht die quotierten 420,42 €. Bei der Allianz entschärft die Stabilitätszusage bis 30.04.2027 das; Debeka und die Bayerische starten im laufenden Beitragsjahr.</p>
+  <p class="foot">Anpassungswerte aus Vergleichsportalen und dem Maklerblog der Signal Iduna. Fordere die Historie schriftlich beim Versicherer an — sie ist die wichtigste Zahl im ganzen Vergleich.</p>
+</div>
+
+<!-- ===== LANGFRIST ===== -->
+<h2>3 · Langfristrechnung</h2>
+<div class="card">
+  <p>Zwischen den Favoriten liegen wenige Euro. Über 30 Jahre entscheidet damit die Anpassung, nicht der Startbeitrag. Die Vorgabe steht bei 3,5 % für alle — trag die echten Werte ein, sobald du sie hast. Der Satz unter der Tabelle rechnet, wie viel schneller der günstigere Tarif steigen darf, bevor er den Vorsprung verliert.</p>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:16px 0">
+    <div><div class="foot" style="margin:0 0 4px">Zeitraum</div>
+      <select id="horizon"><option value="10">10 Jahre</option><option value="20">20 Jahre</option><option value="30" selected>30 Jahre</option><option value="40">40 Jahre</option></select></div>
+    <div id="rates" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+  </div>
+  <div class="tw"><table id="proj"></table></div>
+  <p class="foot" id="projnote"></p>
+</div>
+
+<!-- ===== SELBSTBEHALT ===== -->
+<h2>4 · Selbstbehalt</h2>
+<div class="card flag ok">
+  <div class="grid2">
+    <div>
+      <div class="kpi" style="color:var(--success-ink)">+522,84 €<small> pro Jahr, im schlechtesten Fall</small></div>
+      <p>Ersparnis 68,57 €/Monat = 822,84 €/Jahr. Maximaler Selbstbehalt: 180 € in BC 30 SB plus 120 € in BC 20k SB = 300 €/Jahr. Bei voller Ausschöpfung bleibt ein Plus von 522,84 €, ohne Ausschöpfung sind es 822,84 €. Die einzige Rechnung im ganzen Vergleich ohne Unsicherheit.</p>
+    </div>
+    <div>
+      <h3>Wo er nicht greift</h3>
+      <p>Er gilt nur für ambulante Leistungen sowie Zahnbehandlung, Zahnersatz und Kieferorthopädie. Nicht angerechnet wird er bei stationären Leistungen, den meisten Vorsorgeuntersuchungen und der Zahnprophylaxe.</p>
+      <p class="foot">Über die tarifliche Option lässt sich bei Statuswechsel oder Geburt eines Kindes ohne Gesundheitsprüfung in die Variante ohne Selbstbehalt wechseln.</p>
+    </div>
+  </div>
+  <p style="margin-top:10px">Signal Iduna und Debeka sind beide mit „SB 0 EUR" gerechnet — frag dort nach einer entsprechenden Stufe.</p>
+</div>
+
+<!-- ===== ANBIETER ===== -->
+<h2>5 · Die vier Anbieter</h2>
+<div class="grid2">
+
+<div class="card">
+  <span class="badge good">Favorit</span>
+  <h3 style="margin-top:10px">Bayerische Beamtenkrankenkasse · BeihilfeCOMFORT</h3>
+  <p><b>Dafür:</b> Günstigster Beitrag, mit 3,9 bis 4,4 % der mit weitem Abstand niedrigste Risikozuschlag — und mit 3,9 die beste Durchschnittsnote im Leistungsvergleich. Sehhilfen 500 € Rechnungsbetrag pro zwei Kalenderjahre plus Refraktionsbestimmung — mehr als bei beiden Wettbewerbern. Psychotherapie 50 Sitzungen, darüber hinaus wenn die Beihilfe leistet. Anschlussheilbehandlung <em>und</em> medizinische Rehabilitation im Grundtarif. Ersatz-Krankenhaustagegeld 50 €/Tag bei Verzicht auf Wahlleistungen. Option auf Höherversicherung ohne Gesundheitsprüfung.</p>
+  <p><b>Dagegen:</b> Hörversorgung auf 1.500 € je Ohr gedeckelt. Kieferorthopädie nur bei Behandlungsbeginn vor dem 18. Lebensjahr, bei Unfall oder wenn die Beihilfe leistet. Höchste Anpassung am Markt zum 01.01.2026 — bereits eingepreist, aber erklärungsbedürftig. Der Vorschlag ist eine Schnellberechnung ohne Prüfung der Annahmerichtlinien und damit noch nicht bindend.</p>
+  <div class="qbox"><b>Zu klären:</b><ul>
+    <li>Beitragsanpassungen der letzten 10 Jahre, schriftlich</li>
+    <li>Bestätigung, dass der Tarif SKH 5 nicht Vertragsbestandteil wird — der Zuschlag ist im Vorschlag als manuell überschriebener Beitrag dieses Tarifs eingetragen und steht dadurch in den Vertragsgrundlagen</li>
+    <li>Verbindliches Angebot nach Prüfung der Annahmerichtlinien</li>
+  </ul></div>
+</div>
+
+<div class="card">
+  <span class="badge good">Starke Alternative</span>
+  <h3 style="margin-top:10px">Signal Iduna · EXKLUSIV-B</h3>
+  <p><b>Dafür:</b> Bester Tarifbeitrag vor Zuschlag, glatte 10 % Zuschlag statt 19 oder 30 %, Leistungsnote 3,8. Offener Hilfsmittelkatalog mit voller Erstattung, Zusage erst ab 1.000 € Rechnungsbetrag — und <b>ohne den 1.500-€-Deckel, den die anderen drei kennen</b>. Keine Zahnstaffel, Privatkliniken uneingeschränkt, Schutzimpfungen und ambulante Kur stark bewertet. Mit 6,06 € der günstigste Ergänzungstarif, dafür auch der schmalste.</p>
+  <p><b>Dagegen:</b> Psychotherapie mit Zusagepflicht ab der 31. Sitzung und Gesundheitsfragen über 10 statt 5 Jahre. Sehhilfen nur 300 €. Häusliche Krankenpflege schwach. Beitragsrückerstattung nur 2 Monatsbeiträge. Kur, Sanatorium und sonstige Reha werden nicht erstattet, nur Anschlussheilbehandlung. Und 2026 rund 21,3 % Anpassung.</p>
+  <div class="qbox"><b>Zu klären:</b><ul>
+    <li>Neuberechnung auf Beginn 01.10.2026 — aktuell 01.01.2027, also Eintrittsalter 38 statt 37</li>
+    <li>Gibt es eine Selbstbehaltsstufe?</li>
+    <li>Beitragsanpassungen der EXKLUSIV-B-Tarife der letzten 10 Jahre</li>
+  </ul></div>
+</div>
+
+<div class="card">
+  <span class="badge crit">Nur nach Herabsetzung des Zuschlags</span>
+  <h3 style="margin-top:10px">Debeka · B30 / B20K / WL / BC</h3>
+  <p><b>Dafür:</b> Ohne Zuschlag der drittgünstigste Tarifbeitrag, nur 5,58 € hinter Signal Iduna. Du bist bereits als Anwärter versichert — die Umschreibung läuft ohne neue Gesundheitsprüfung, die Alterungsrückstellung bleibt erhalten, und der Beginn 01.10.2026 passt nahtlos zur Verbeamtung. Als einzige der vier hat Debeka ihre Beamtentarife zum 01.01.2026 unangetastet gelassen, während die Wettbewerber bei 11, 21 und 23 % lagen.</p>
+  <p><b>Dagegen:</b> 30 % Risikozuschlag, 105,06 € im Monat, über 40 Jahre nominal 50.429 €. Und mit <b>3,1 die schwächste Leistungsnote</b> im Feld, rund 0,8 Punkte hinter den anderen: Hilfsmittel und Heilmittel nur bis zur beihilfefähigen Höhe, Zahn-Materialkosten zu 90 %, Auslandsleistungen nur nach deutschen Gebührensätzen, Kur nur als Anschlussheilbehandlung binnen 28 Tagen, Vorsorge wird auf die Beitragsrückerstattung angerechnet.</p>
+  <div class="qbox"><b>In dieser Reihenfolge:</b><ul>
+    <li><b>Antrag auf Überprüfung und Herabsetzung des Risikozuschlags</b> — mit der Risikoentscheidung der Bayerischen als Vergleichsmaßstab</li>
+    <li>Auf welche Tarife entfällt der Zuschlag genau?</li>
+    <li>Seite 3 von 3 des Absicherungsvorschlags — sie fehlt in den Unterlagen</li>
+    <li>Wert der Alterungsrückstellung aus der Anwartschaft</li>
+  </ul></div>
+</div>
+
+<div class="card">
+  <span class="badge crit">Ausgeschieden</span>
+  <h3 style="margin-top:10px">Allianz · BHA51 / BHK51 / BHZ51 / BHEB</h3>
+  <p><b>Dafür:</b> Leistungsnote 3,8, im Maklervergleich sogar 4,0. Arznei- und Verbandmittel, Heilpraktiker, GOÄ ambulant, Zahnersatz und Inlays jeweils Bestnote. Einbettzimmer mit Privatarzt, Psychotherapie ohne Zusage, Beitragsrückerstattung bis 4,2 Monatsbeiträge, Gesundheitsfragen nur 5 Jahre. Mit 11 % die moderateste Anpassung 2026 und Beitragsstabilität bis 30.04.2027 — als einzige mit belastbarer Preisgültigkeit über den Vertragsbeginn hinaus.</p>
+  <p><b>Dagegen:</b> 19,2 % Zuschlag, davon 27,4 % allein auf den ambulanten Haupttarif — 71 € im Monat. Auch der Tarifbeitrag vor Zuschlag ist mit 441,58 € der zweithöchste. Dazu Zahnstaffel über 4 Jahre bis max. 3.000 €, Hilfsmittel nur zu 80 % wenn nicht über die Allianz bezogen, ambulante Kur schwach.</p>
+  <div class="qbox"><b>Nur sinnvoll, wenn</b> der Zuschlag nach erneuter fachärztlicher Vorlage auf das Niveau der Wettbewerber fällt.</div>
+</div>
+
+</div>
+
+<!-- ===== LEISTUNGSVERGLEICH ===== -->
+<h2>6 · Leistungsvergleich</h2>
+<div class="card">
+  <p>19 Kriterien, alle vier Anbieter, Noten von 0 bis 5 auf derselben Skala. Für Signal Iduna und Allianz stammen sie aus dem Leistungsvergleich im Maklerangebot; für die Bayerische und Debeka habe ich sie selbst vergeben — die Bayerische anhand ihrer vollständigen Tarifbedingungen, Debeka anhand öffentlicher Bedingungsanalysen, da nur der zweiseitige Vorschlag vorliegt.</p>
+  <p><b>Die Skala ist kalibriert:</b> Über dieselben 19 Kriterien gemittelt kommt Signal Iduna auf 3,8 — exakt die Gesamtnote, die auch der Maklervergleich vergibt. Die Allianz landet bei mir auf 3,8 statt 4,0, weil ich Kur, Reha und die Ersatzleistung bei Verzicht auf Wahlleistungen mitgewichte, wo sie schwach ist. Die Noten für die Bayerische und Debeka sind damit auf einer Skala eingeordnet, die sich an zwei bekannten Punkten überprüfen lässt.</p>
+<div class="tw"><table>
+<tr><th>Kriterium</th><th>Bayerische</th><th>Signal Iduna</th><th>Debeka</th><th>Allianz</th></tr>
+<tr><td><b>Hilfsmittel allgemein</b></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">beihilfefähige Hilfsmittel, breite Aufzählung, Reparaturen und Kommunikationshilfe erstattet</span></td><td><span>4,4</span><br><span class="src" style="white-space:normal;font-weight:400">offener Katalog, volle Erstattung, Zusage ab 1.000 €</span></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">nur beihilfefähige Höhe, Krankenfahrstuhl 620 €</span></td><td><span>4,1</span><br><span class="src" style="white-space:normal;font-weight:400">offener Katalog, aber nur 80 % ohne Bezug über die Allianz</span></td></tr>
+<tr><td><b>Hörversorgung</b></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">1.500 € je Ohr</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">kein Höchstbetrag ausgewiesen</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">1.500 €</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">1.500 € je Versorgung</span></td></tr>
+<tr><td><b>Sehhilfen</b></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">500 € je 2 Kalenderjahre + Refraktionsbestimmung, +100 € über BErgPlus</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>1,9</span><br><span class="src" style="white-space:normal;font-weight:400">300 € je 2 J., 600 € ab 8 dpt, + 2.000 € Lasik</span></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">B bis 1.000 € Rechnungsbetrag; BC max. 2 Brillen/Jahr zu 30 bzw. 75 €</span></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">410 € je 2 J., Lasik über BHEB</span></td></tr>
+<tr><td><b>Heilpraktiker</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">GebüH-Höchstsätze inkl. Arznei- und Verbandmittel, Hufeland-Verzeichnis</span></td><td><span>4,2</span><br><span class="src" style="white-space:normal;font-weight:400">GebüH, Rechnungsbetrag max. 2.000 €</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">über BC nach GebüH, im Grundtarif begrenzt</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">ohne Begrenzung</span></td></tr>
+<tr><td><b>Psychotherapie ambulant</b></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">50 Sitzungen ohne Zusage, darüber wenn die Beihilfe leistet</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>1,6</span><br><span class="src" style="white-space:normal;font-weight:400">50 Sitzungen, Zusage ab der 31.</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">52 Sitzungen, danach schriftliche Zusage</span></td><td><span>3,7</span><br><span class="src" style="white-space:normal;font-weight:400">30 Sitzungen zu 100 %, danach 70 %, max. 50, keine Zusage</span></td></tr>
+<tr><td><b>Heilmittel</b></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">bis zu den beihilfefähigen Höchstsätzen</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">Regelversorgung</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>2,0</span><br><span class="src" style="white-space:normal;font-weight:400">nur beihilfefähige Höhe, BC leistet hier nicht</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">Regelversorgung</span></td></tr>
+<tr><td><b>Häusliche Krankenpflege</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">Behandlungs- und Grundpflege, hauswirtschaftliche Versorgung, Palliativ, Soziotherapie</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>2,3</span><br><span class="src" style="white-space:normal;font-weight:400">nur Behandlungspflege zum GKV-Satz, Haushaltshilfe max. 80 €/Tag</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">beihilfeorientiert</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">Krankenhausvermeidungs- und Sicherungspflege nach G-BA-Richtlinie</span></td></tr>
+<tr><td><b>Vorsorge</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">gesetzliche Programme ohne Alters- und Intervallgrenzen, BRE- und selbstbehaltsunschädlich</span></td><td><span>4,2</span><br><span class="src" style="white-space:normal;font-weight:400">gesetzliche Programme, Diagnosezentren nach Zusage, Präventionskurs</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">gesetzliche Programme, wird auf die Beitragsrückerstattung angerechnet</span></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">ohne Altersgrenzen, aber Erstattung verwirkt die Beitragsrückerstattung</span></td></tr>
+<tr><td><b>Schutzimpfungen</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">STIKO, BRE- und selbstbehaltsunschädlich</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,9</span><br><span class="src" style="white-space:normal;font-weight:400">umfassend</span></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">nach STIKO</span></td><td><span><span class="dot d-bad"></span>2,9</span><br><span class="src" style="white-space:normal;font-weight:400">eingeschränkt</span></td></tr>
+<tr><td><b>GOÄ ambulant</b></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">bis zum Höchstsatz (3,5-fach)</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">bis zum Höchstsatz, ohne weitere Begrenzung</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">bis zum Höchstsatz, keine Analogabrechnung</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">ohne Begrenzung</span></td></tr>
+<tr><td><b>Stationäre Unterbringung</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">2-Bett + Chefarzt über KlinikPlus, 1-Bett über BErgPlus</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">1-/2-Bett + Privatarzt</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">2-Bett + Chefarzt über WL, 1-Bett über BC</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">1-Bett + Privatarzt</span></td></tr>
+<tr><td><b>Ersatzleistung bei Verzicht</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">50 €/Tag über KlinikPlus plus 30 €/Tag über BErgPlus</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>2,4</span><br><span class="src" style="white-space:normal;font-weight:400">gering</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">30 €/Tag über BC</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>2,4</span><br><span class="src" style="white-space:normal;font-weight:400">gering</span></td></tr>
+<tr><td><b>Privatkliniken</b></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">Reha und AHB zum günstigsten Tagessatz, sonst nicht ausdrücklich</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">uneingeschränkt</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">ersatzweise über BC</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,8</span><br><span class="src" style="white-space:normal;font-weight:400">weitgehend, mit Einschränkungen</span></td></tr>
+<tr><td><b>Zahnbehandlung</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">bis GOZ-Höchstsatz, Inlays, Prophylaxe BRE- und selbstbehaltsunschädlich</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">100 %, ohne Prophylaxe 80 %</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">Materialkosten nur zu 90 % erstattet</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,7</span><br><span class="src" style="white-space:normal;font-weight:400">100 %, GOZ ohne Begrenzung</span></td></tr>
+<tr><td><b>Zahnersatz und Implantate</b></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">Kronen, Brücken, Veneers, Implantate; Material/Labor über BErgPlus bis 6.000 €/Jahr</span></td><td><span>4,2</span><br><span class="src" style="white-space:normal;font-weight:400">100 % inkl. Knochenaufbau, ohne Prophylaxe 80 %</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">über BC bis 6.150 €/Jahr, Material zu 90 %</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">100 %, max. 6 Implantate je Kiefer</span></td></tr>
+<tr><td><b>Zahnstaffel</b></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">BErgPlus 2.000 € in den ersten 2 Kalenderjahren</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>5,0</span><br><span class="src" style="white-space:normal;font-weight:400">keine</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">BC 2.250 € in den ersten 3 Kalenderjahren</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">4 Jahre, max. 3.000 €</span></td></tr>
+<tr><td><b>Kur und Reha</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">AHB und medizinische Reha im Grundtarif, Kurtagegeld 40 €/Tag über BErgPlus</span></td><td><span><span class="dot d-bad"></span>3,1</span><br><span class="src" style="white-space:normal;font-weight:400">nur AHB, Kur und Sanatorium ausgeschlossen; ambulante Kur stark</span></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">AHB nur binnen 28 Tagen; BC Kurtagegeld 11 bzw. 22 €/Tag</span></td><td><span style="font-weight:700"><span class="dot d-crit"></span>1,5</span><br><span class="src" style="white-space:normal;font-weight:400">nur AHB, Kur und Sanatorium ausgeschlossen</span></td></tr>
+<tr><td><b>Auslandsschutz</b></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">12 Monate weltweit, verlängerbar, Rücktransport zu 100 %</span></td><td><span>4,0</span><br><span class="src" style="white-space:normal;font-weight:400">weltweit bei vorübergehendem Aufenthalt nach Absprache</span></td><td><span><span class="dot d-bad"></span>3,0</span><br><span class="src" style="white-space:normal;font-weight:400">Weltgeltung, aber Erstattung nur nach deutschen GOÄ-Sätzen</span></td><td><span>3,5</span><br><span class="src" style="white-space:normal;font-weight:400">außereuropäisch bis 2 Monate</span></td></tr>
+<tr><td><b>Beitragsrückerstattung</b></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">jährlich festgelegt, im Vorschlag nicht beziffert</span></td><td><span><span class="dot d-bad"></span>2,6</span><br><span class="src" style="white-space:normal;font-weight:400">2 Monatsbeiträge</span></td><td><span><span class="dot d-bad"></span>2,5</span><br><span class="src" style="white-space:normal;font-weight:400">bis 2 Monatsbeiträge, Vorsorge wird angerechnet</span></td><td><span style="font-weight:700"><span class="dot d-good"></span>4,5</span><br><span class="src" style="white-space:normal;font-weight:400">1,8 bis 4,2 Monatsbeiträge</span></td></tr>
+<tr class="sum"><td>Mittelwert über alle 19 Kriterien</td><td style="font-size:17px">3,9</td><td style="font-size:17px">3,8</td><td style="font-size:17px">3,1</td><td style="font-size:17px">3,8</td></tr>
+</table></div>
+  <div class="grid2" style="margin-top:18px">
+    <div>
+      <h3>Was die Tabelle zeigt</h3>
+      <p><b>Die Bayerische führt auch bei der Leistung</b> — 3,9 gegen 3,8. Ihre Stärken liegen dort, wo Beihilfeempfänger tatsächlich Lücken haben: Kur und Reha im Grundtarif, häusliche Krankenpflege, Vorsorge ohne Anrechnung auf die Beitragsrückerstattung, Sehhilfen, Psychotherapie ohne Zusagehürde und die höchste Ersatzleistung, wenn man auf Wahlleistungen verzichtet. Sie ist damit gleichzeitig die günstigste, die mit dem niedrigsten Risikozuschlag und die mit der besten Durchschnittsnote.</p>
+      <p><b>Signal Iduna und Allianz sind gleichauf</b>, aber mit gegensätzlichem Profil. Signal Iduna gewinnt bei Hilfsmitteln, Privatkliniken, Zahnstaffel und Schutzimpfungen und verliert bei Psychotherapie, Sehhilfen und häuslicher Krankenpflege. Die Allianz ist bei Gebührenordnungen, Zahnersatz, Heilpraktiker und Beitragsrückerstattung vorn und bei Kur, Reha und Schutzimpfungen deutlich schwächer.</p>
+    </div>
+    <div>
+      <h3>Debeka fällt leistungsseitig ab</h3>
+      <p>Mit 3,1 liegt Debeka rund 0,8 Punkte hinter dem Feld — und das systematisch, nicht durch einen Ausreißer. Hilfsmittel und Heilmittel nur bis zur beihilfefähigen Höhe, Materialkosten beim Zahn zu 90 % statt 100 %, Auslandsleistungen nur nach deutschen Gebührensätzen, Kur nur als Anschlussheilbehandlung binnen 28 Tagen, Vorsorge wird auf die Beitragsrückerstattung angerechnet.</p>
+      <p>Zusammen mit dem Risikozuschlag von 30 % heißt das: Debeka ist im Moment gleichzeitig die teuerste und die leistungsschwächste der drei Favoriten. Ihre zwei echten Argumente bleiben die bestehende Anwartschaft mit erhaltener Alterungsrückstellung und die Nullrunde 2026 in den Beamtentarifen. Beide zusammen tragen die Entscheidung nur, wenn der Zuschlag deutlich fällt.</p>
+    </div>
+  </div>
+  <p class="foot">Die Noten für die Bayerische und Debeka sind meine Einschätzung, keine Fremdbewertung. Sie beruhen bei der Bayerischen auf den Originalbedingungen, bei Debeka auf Sekundärquellen — nimm sie als Ordnungshilfe, nicht als Messwert. Bei Debeka lohnt es sich, die Tarifbedingungen zu B30, B20K, WL und BC anzufordern und die Zeilen gegenzuprüfen.</p>
+</div>
+
+<!-- ===== ERGÄNZUNG ===== -->
+<h2>7 · Beihilfeergänzung — brauchst du den Baustein?</h2>
+<div class="card">
+  <p><b>Ja.</b> Er füllt die Lücke zwischen dem, was Beihilfe und Grundtarif zusammen zahlen, und der tatsächlichen Rechnung. Die Lücke entsteht, weil die Beihilfe eigene Höchstsätze und Ausschlüsse hat, die dein PKV-Tarif nicht automatisch mitträgt — typisch beim Zahnersatz, wo Material- und Laborkosten schnell vierstellig werden.</p>
+  <p><b>Beispiel BeihilfeErgänzungPlus, 28,45 €:</b> Einbettzimmer-Differenz, privatärztliche Leistungen über die GOÄ-Höchstsätze hinaus, Restkosten für Hilfsmittel und Alternativmedizin, nicht verschreibungspflichtige Arzneimittel, Reiseimpfungen, Material- und Laborkosten beim Zahnersatz bis 6.000 €/Jahr, Sehhilfen 100 €, Vorsorge über die gesetzlichen Programme hinaus bis 100 €/Jahr, Kurtagegeld 40 €/Tag, Auslandsschutz 56 Tage, Ersatz-Krankenhaustagegeld 30 €/Tag.</p>
+  <p><b>Was er nicht leistet:</b> Eigenbeteiligungen, Selbstbehalte und Kostendämpfungspauschalen der Beihilfe. Thüringen hat solche Eigenbehalte — 10 % bei Arznei-, Hilfsmitteln und Fahrtkosten (5 bis 10 €), 7,50 €/Tag im Krankenhaus, 25 €/Tag bei Privatarzt, gedeckelt auf 2 % der Dienstbezüge pro Jahr. Der Ergänzungstarif schließt die Lücke zum Arzt, nicht die zur Beihilfestelle.</p>
+  <p>Preise: Signal Iduna 6,06 €, Debeka 14,28 € netto, Bayerische 28,45 €, Allianz 32,54 €. Besonders relevant bei Vorerkrankungen: Bei der Bayerischen und der Allianz deckt der Ergänzungstarif die <b>Restkosten für Hilfsmittel</b> — also auch den Anteil einer Versorgung, den Beihilfe und Grundtarif offenlassen.</p>
+</div>
+
+<!-- ===== ENTSCHEIDUNGSPFAD ===== -->
+<h2>8 · Entscheidungspfad</h2>
+<div class="card flag ok">
+  <h3>Schritt 1 — der Risikozuschlag</h3>
+  <p>Der größte Hebel: 3,9 % gegen 30 % für dieselbe Vorerkrankung. Beantrage bei den Gesellschaften mit hohem Zuschlag die Überprüfung und Herabsetzung. Was dabei zählt: ein einmaliges, lange zurückliegendes Ereignis ohne Rezidiv, kein laufender Behandlungs- oder Medikationsbedarf, keine geplante Maßnahme, benannte Fachärzte als Auskunftgeber — und die Risikoentscheidung eines Wettbewerbers als schriftlicher Vergleichsmaßstab.</p>
+
+  <h3>Schritt 2 — drei Anfragen</h3>
+  <ol>
+    <li><b>An alle vier:</b> Beitragsanpassungen der angebotenen Tarife der letzten zehn Jahre, in Prozent je Jahr.</li>
+    <li><b>An Signal Iduna:</b> Neuberechnung auf Beginn 01.10.2026 und eine Selbstbehaltsstufe.</li>
+    <li><b>An die Bayerische:</b> Bestätigung zu SKH 5 und ein verbindliches Angebot nach Prüfung der Annahmerichtlinien.</li>
+  </ol>
+
+  <h3>Schritt 3 — dann gilt</h3>
+  <ul>
+    <li><b>Fällt der Debeka-Zuschlag auf 10 % oder darunter: Debeka.</b> Bei 10 % läge sie bei rund 425 €, bei 4 % bei rund 406 € — beides über der Bayerischen, aber Debeka ist die einzige, die ihre Beamtentarife 2026 nicht angefasst hat, während die günstigeren um 21 bis 30 % erhöht haben. Dazu die erhaltene Alterungsrückstellung und der nahtlose Beginn. Über 30 Jahre schlägt ein Prozentpunkt weniger Anpassung jeden Startvorteil — rechne es in Abschnitt 3 nach.</li>
+    <li><b>Bleibt er bei 30 %:</b> Debeka scheidet aus. 105 € im Monat holt keine Anpassungshistorie wieder herein.</li>
+    <li><b>Dann entscheidet die Historie zwischen Bayerischer und Signal Iduna.</b> War 2026 bei der Bayerischen ein Nachholeffekt nach ruhigen Jahren, nimm die <b>Bayerische mit Selbstbehalt</b>: günstigster Beitrag, mit Abstand niedrigster Zuschlag und beste Leistungsnote — sie gewinnt in allen drei Dimensionen gleichzeitig. Zeigt sich ein Muster wiederholt hoher Anpassungen, nimm <b>Signal Iduna</b> — deren offener Hilfsmittelkatalog ohne Höchstbetrag ist das stärkste Einzelargument im ganzen Vergleich.</li>
+    <li><b>Allianz</b> nur bei deutlich reduziertem Zuschlag.</li>
+  </ul>
+
+  <h3>Schritt 4 — Bausteine</h3>
+  <ul>
+    <li><b>Wahlleistungen behalten.</b> 16 bis 18 € im Monat, nachträglich nur mit erneuter Gesundheitsprüfung zu bekommen — bei bestehender Vorerkrankung kein Selbstläufer. Bei der Bayerischen zahlt KlinikPlus 50 €/Tag Ersatz-Krankenhaustagegeld, wenn du im Ernstfall verzichtest — der Baustein verfällt also nicht ungenutzt.</li>
+    <li><b>Beihilfeergänzung behalten</b> — sie deckt unter anderem die Hilfsmittel-Restkosten.</li>
+    <li><b>Krankenhaus- und Kurtagegeld streichen.</b> Reine Barleistungen, zusammen bis zu 22 €, nachträglich problemlos abschließbar.</li>
+    <li><b>Selbstbehalt nehmen</b>, wo angeboten.</li>
+    <li><b>Zuschlag statt Leistungsausschluss.</b> Der von der Bayerischen angebotene Ausschluss spart 14,40 €, gilt aber lebenslang und umfasst ausdrücklich die Folgen. Bei 3,9 % ist der Zuschlag die klar bessere Wahl.</li>
+  </ul>
+</div>
+
+<p class="foot" style="text-align:center;margin-top:24px">Aufbereitung konkreter Angebotsunterlagen, keine Versicherungsberatung. Alle Beträge gelten für dieses eine Profil und lassen sich nicht übertragen.</p>
+
+</div>
+
+<script>
+// n = Nettobeitrag ohne Risikozuschlag, r = Risikozuschlag
+const M = (l,n,r=0,extra={}) => Object.assign({l,n,r},extra);
+const OFFERS = [
+  { id:"bay", name:"Bayerische Beamtenkr.", sub:"BeihilfeCOMFORT · Beginn 01.11.2026", sbAware:true,
+    mods:{
+      base30:M("BeihilfeCOMFORT 30",271.76,9.00,{nSB:223.75,rSB:8.46}),
+      base20:M("BeihilfeCOMFORT 20k",93.30,6.00,{nSB:73.64,rSB:5.64}),
+      wl30:M("BeihilfeKlinikPlus 30",13.77),
+      wl20:M("BeihilfeKlinikPlus 20k",3.51),
+      erg:M("BeihilfeErgänzungPlus",28.45,0.30),
+      pflege:M("PVB",40.60), kht:M("KHT 35",8.75), kur:M("Kurtagegeld 150",13.50)
+    }},
+  { id:"si", name:"Signal Iduna", sub:"EXKLUSIV-B · Beginn 01.01.2027",
+    gz:{rate:0.10, on:["base30","wl30","erg"]},
+    mods:{
+      base30:M("EXKLUSIV-B 30",197.23,19.72),
+      base20:M("EXKLUSIV-B 20V",100.88,10.09),
+      wl30:M("EXKLUSIV-B-W 30",11.73),
+      wl20:M("EXKLUSIV-B-W 20V",4.27),
+      erg:M("EXKLUSIV-B-ES 50 + B-E 50",6.06),
+      pflege:M("PVB",42.63), kht:M("EKH 35",6.31)
+    }},
+  { id:"deb", name:"Debeka", sub:"B / WL / BC · Beginn 01.10.2026",
+    mods:{
+      base30:M("B30",218.04,65.41),
+      base20:M("B20K",104.23,31.27),
+      wl30:M("WL30",9.93,2.98),
+      wl20:M("WL20K",3.70,1.11),
+      erg:M("BC",14.28,4.29),
+      pflege:M("PVB",39.70), kht:M("KHT35",8.09)
+    }},
+  { id:"az", name:"Allianz", sub:"BHA51 / BHK51 / BHZ51 · Beginn 01.01.2027", noSplit:true,
+    mods:{
+      base30:M("BHA51 + BHZ51",236.50,55.00,{n70:141.90,r70:33.00}),
+      stat:M("BHK51 (stationär, inkl. 2-Bett + Privatarzt)",94.07,7.00,{n70:56.44,r70:4.20}),
+      base20:M("—",0,0,{na:true}),
+      wl30:M("BHE1K (1-Bett-Differenz)",6.62,1.00),
+      wl20:M("—",0,0,{na:true}),
+      erg:M("BHEB",32.54,8.00),
+      pflege:M("PVB",45.03), kht:M("KHT02/35",8.65),
+      gzfix:M("Gesetzlicher Zuschlag",26.82,0,{n70:20.00})
+    }}
+];
+
+const LBL = {
+  base30:"Grundschutz 30 % (ambulant / stationär allg. / Zahn)",
+  stat:"Stationärer Grundtarif — nur bei Allianz getrennt",
+  base20:"Ergänzung 20 % (bei 50 % Beihilfe erforderlich)",
+  wl30:"Wahlleistungen stationär 30 %",
+  wl20:"Wahlleistungen stationär 20 %",
+  erg:"Beihilfeergänzung (Restkosten)",
+  pflege:"Pflegepflichtversicherung PVB",
+  kht:"Krankenhaustagegeld 35 €",
+  kur:"Kurtagegeld 150 €"
+};
+const ORDER = ["base30","stat","base20","wl30","wl20","erg","pflege","kht","kur"];
+const DEFRATE = { bay:3.5, si:3.5, deb:3.5, az:3.5 };
+
+const $ = s => document.querySelector(s);
+const eur = n => n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
+const eur0 = n => Math.round(n).toLocaleString("de-DE") + " €";
+
+function state(){
+  return { bh:document.querySelector('input[name=bh]:checked').value,
+    wl:$("#m_wl").checked, erg:$("#m_erg").checked, kht:$("#m_kht").checked,
+    kur:$("#m_kur").checked, rz:$("#m_rz").checked, sb:$("#m_sb").checked };
+}
+// liefert {net, rz} eines Bausteins
+function part(o,k,s){
+  const m=o.mods[k]; if(!m||m.na) return null;
+  let net=m.n, rz=m.r;
+  if(o.sbAware && s.sb && m.nSB!==undefined){ net=m.nSB; rz=m.rSB; }
+  if(o.noSplit && s.bh==="70" && m.n70!==undefined){ net=m.n70; rz=(m.r70!==undefined?m.r70:m.r); }
+  return {net, rz};
+}
+function activeKeys(o,s){
+  const is70=s.bh==="70", k=["base30"];
+  if(o.mods.stat) k.push("stat");
+  if(!is70||o.noSplit) k.push("base20");
+  if(s.wl){ k.push("wl30"); if(!is70||o.noSplit) k.push("wl20"); }
+  if(s.erg) k.push("erg");
+  k.push("pflege");
+  if(s.kht) k.push("kht");
+  if(s.kur) k.push("kur");
+  if(o.mods.gzfix) k.push("gzfix");
+  return k;
+}
+function totals(o,s){
+  const keys=activeKeys(o,s); let net=0, rz=0;
+  keys.forEach(k=>{ const p=part(o,k,s); if(p){ net+=p.net; rz+=p.rz; } });
+  if(o.gz){ let b=0; o.gz.on.forEach(k=>{ if(keys.includes(k)){ const p=part(o,k,s); if(p) b+=p.net; } }); net+=b*o.gz.rate; }
+  if(!s.rz) rz=0;
+  return {net, rz, sum:net+rz};
+}
+
+function render(){
+  const s=state();
+  const rows=OFFERS.map(o=>{
+    const t=totals(o,s);
+    return {o, label:o.name+(o.sbAware?(s.sb?" (mit SB)":" (ohne SB)"):""), sub:o.sub, ...t};
+  }).sort((a,b)=>a.sum-b.sum);
+  const max=Math.max(...rows.map(r=>r.sum)), min=rows[0].sum;
+
+  $("#chart").innerHTML = rows.map((r,i)=>{
+    const est = r.o.noSplit && s.bh==="70";
+    const wNet=(r.net/max*100), wRz=(r.rz/max*100);
+    return `<div class="row">
+      <div class="nm"><b>${r.label}${est?" *":""}</b>${r.sub}</div>
+      <div class="track">
+        <div class="seg net ${i===0?"best":""} ${r.rz<=0?"cap":""}" style="width:${wNet.toFixed(1)}%"></div>
+        ${r.rz>0?`<div class="seg rz" style="width:${wRz.toFixed(1)}%"></div>`:""}
+      </div>
+      <div class="val">${eur(r.sum)}<small>${i===0?"günstigster":"+"+eur(r.sum-min)}</small></div>
+    </div>`;
+  }).join("");
+
+  const sp=max-min;
+  let note=`Spanne ${eur(sp)} im Monat = ${eur(sp*12)} im Jahr.`;
+  if(s.rz){
+    const rzs=rows.map(r=>r.rz);
+    note += ` Davon entfallen ${eur(Math.max(...rzs)-Math.min(...rzs))} allein auf unterschiedliche Risikozuschläge.`;
+  } else {
+    note += ` Ohne Risikozuschlag gerechnet — so stehen die Tarife selbst zueinander.`;
+  }
+  if(s.bh==="70") note += " * Allianz geschätzt.";
+  $("#chartnote").textContent=note;
+
+  // Detailtabelle
+  const act=OFFERS.map(o=>activeKeys(o,s));
+  let h=`<tr><th>Baustein</th>${OFFERS.map(o=>`<th class="n">${o.name}${o.sbAware&&s.sb?" (SB)":""}</th>`).join("")}</tr>`;
+  ORDER.forEach(k=>{
+    if(!OFFERS.some(o=>o.mods[k]&&!o.mods[k].na)) return;
+    const cells=OFFERS.map(o=>{
+      const p=part(o,k,s);
+      if(!p) return `<td class="n" style="color:var(--ink-3)">–</td>`;
+      const v = p.net + (s.rz?p.rz:0);
+      const hint = (s.rz && p.rz>0) ? `<br><span class="src" style="color:var(--bar-rz)">inkl. ${eur(p.rz)} RZ</span>` : "";
+      return `<td class="n">${eur(v)}${hint}</td>`;
+    });
+    const on=OFFERS.some((o,i)=>act[i].includes(k)&&o.mods[k]&&!o.mods[k].na);
+    h+=`<tr class="${on?"":"off"}"><td>${LBL[k]}</td>${cells.join("")}</tr>`;
+  });
+  h+=`<tr><td>Gesetzlicher Zuschlag 10 %</td>${OFFERS.map(o=>{
+    if(o.mods.gzfix){ const p=part(o,"gzfix",s); return `<td class="n">${eur(p.net)}</td>`; }
+    if(!o.gz) return `<td class="n" style="color:var(--ink-3);font-size:12px">nicht ausgewiesen</td>`;
+    const keys=activeKeys(o,s); let b=0;
+    o.gz.on.forEach(k=>{ if(keys.includes(k)){ const p=part(o,k,s); if(p) b+=p.net; } });
+    return `<td class="n">${eur(b*o.gz.rate)}</td>`;
+  }).join("")}</tr>`;
+  h+=`<tr class="rzrow"><td><b>davon Risikozuschlag</b><br><span class="src">in % der zuschlagspflichtigen Tarife</span></td>${OFFERS.map((o,i)=>{
+    if(!s.rz) return `<td class="n" style="color:var(--ink-3)">abgewählt</td>`;
+    let rz=0, base=0;
+    act[i].forEach(k=>{ const p=part(o,k,s); if(p&&p.rz>0){ rz+=p.rz; base+=p.net; } });
+    if(rz===0) return `<td class="n" style="color:var(--ink-3)">–</td>`;
+    return `<td class="n">${eur(rz)}<br><span class="src" style="color:var(--bar-rz)">${(rz/base*100).toFixed(1).replace(".",",")} %</span></td>`;
+  }).join("")}</tr>`;
+  h+=`<tr class="sum"><td>Monatsbeitrag</td>${OFFERS.map(o=>`<td class="n">${eur(totals(o,s).sum)}</td>`).join("")}</tr>`;
+  h+=`<tr class="sum" style="border-top:none"><td style="font-weight:400;color:var(--ink-3)">Jahresbeitrag</td>${OFFERS.map(o=>`<td class="n" style="font-weight:400;color:var(--ink-3)">${eur(totals(o,s).sum*12)}</td>`).join("")}</tr>`;
+  $("#detail").innerHTML=h;
+
+  renderProj();
+}
+
+function renderProj(){
+  const s=state(), N=+$("#horizon").value;
+  const data=OFFERS.map(o=>{
+    const r=(parseFloat(document.getElementById("r_"+o.id).value)||0)/100;
+    const P=totals(o,s).sum;
+    const f = r===0 ? N : (Math.pow(1+r,N)-1)/r;
+    return { o, label:o.name+(o.sbAware?(s.sb?" (mit SB)":" (ohne SB)"):""),
+      start:P, cum:P*12*f, end:P*Math.pow(1+r,N), r };
+  }).sort((a,b)=>a.cum-b.cum);
+
+  let h=`<tr><th>Anbieter</th><th class="n">Start heute</th><th class="n">Anpassung p. a.</th><th class="n">Beitrag nach ${N} J.</th><th class="n">Summe über ${N} Jahre</th><th class="n">Mehrkosten</th></tr>`;
+  data.forEach((d,i)=>{
+    h+=`<tr${i===0?' style="font-weight:650"':''}><td>${d.label}</td><td class="n">${eur(d.start)}</td>`
+      +`<td class="n">${(d.r*100).toFixed(1).replace(".",",")} %</td><td class="n">${eur(d.end)}</td>`
+      +`<td class="n">${eur0(d.cum)}</td>`
+      +`<td class="n">${i===0?'<span style="color:var(--success-ink)">günstigster</span>':"+"+eur0(d.cum-data[0].cum)}</td></tr>`;
+  });
+  $("#proj").innerHTML=h;
+
+  const a=data[0], b=data[1];
+  let note=`Zinseszinsrechnung: jeder Beitrag steigt jährlich um den eingetragenen Satz. Nominal, ohne Inflationsbereinigung. `;
+  if(a&&b){
+    const cum=(P,r)=> r===0 ? P*12*N : P*12*(Math.pow(1+r,N)-1)/r;
+    let lo=0, hi=10;
+    for(let i=0;i<60;i++){ const mid=(lo+hi)/2; if(cum(a.start, b.r+mid/100) > cum(b.start, b.r)) hi=mid; else lo=mid; }
+    note += `${a.o.name} verliert den Vorsprung vor ${b.o.name} über ${N} Jahre, sobald die eigene Anpassung um mehr als `
+      + `${lo.toFixed(2).replace(".",",")} Prozentpunkte höher ausfällt.`;
+  }
+  $("#projnote").textContent=note;
+}
+
+$("#rates").innerHTML = OFFERS.map(o=>
+  `<div><div class="foot" style="margin:0 0 4px">${o.name}</div>
+   <input type="number" id="r_${o.id}" value="${DEFRATE[o.id].toFixed(1)}" step="0.1" min="0" max="15"> <span class="foot">% p. a.</span></div>`
+).join("");
+
+document.querySelectorAll("input, select").forEach(el=>el.addEventListener("input",render));
+$("#tt").addEventListener("click",()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", dark?"light":"dark");
+});
+render();
+</script>
+</body>
+</html>
